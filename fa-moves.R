@@ -4,10 +4,10 @@ library(nflreadr)
 
 
 
-rosters_wk = load_rosters_weekly(2002:2023)
+rosters_wk = load_rosters_weekly(2002:2025)
 contracts = load_contracts()
 teams = load_teams()
-rosters = load_rosters(1990:2024)
+rosters = load_rosters(1990:2025)
 
 
 
@@ -15,7 +15,7 @@ teams2 = teams |> dplyr::select(team_abbr, team_nick) |> mutate(team_abbr = clea
 
 
 
-contracts |> filter(player == "Isaiah Searight")
+# contracts |> filter(player == "Isaiah Searight")
 
 
 
@@ -33,7 +33,7 @@ contracts_red = contracts |>
   unnest(years) |>
   dplyr::select(-year_signed, -year_till) |> 
   arrange(years)
-contracts_red |> filter(player == "Justin Simmons")
+contracts_red |> filter(player == "D.K. Metcalf")
 
 
 fa_player_df = rosters |> 
@@ -85,12 +85,12 @@ fa_df = fa_additions |>
 fa_df = read_csv("coding-projects/nfl-fast-r/offeseason-player-value-changes.csv")[, -1]
 
 
-fa_df |> filter(season == 2023) |> arrange(-value_added)
+fa_df |> filter(season == 2024) |> arrange(-value_added)
 
-ggplot(fa_df |> filter(season == 2023), 
+ggplot(fa_df |> filter(season == 2024), 
        aes(x = net_value, y = reorder(team, net_value))) +
   labs(
-    title = "NFL FA Changes (2024)",
+    title = "NFL FA Changes (2025)",
     subtitle = "based on cap-adjusted apy for each player change",
     caption = "By: Sam Burch  |  Data @nflfastR",
     x = "Total Player Value Added (millions)"
@@ -113,7 +113,7 @@ ggplot(fa_df |> filter(season == 2023),
   ) +
   nflplotR::geom_nfl_logos(aes(team_abbr = team), width = .03, alpha = .8)
 
-# ggsave("nfl-fa-value-24.png", width = 16, height = 12, units = "cm")
+# ggsave("nfl-fa-value-25.png", width = 16, height = 12, units = "cm")
 
 
 
@@ -122,12 +122,17 @@ ggplot(fa_df |> filter(season == 2023),
 # Injuries ----------------------------------------------------------------
 
 
+rosters_wk |> filter(season == 2024)
+
+
+
 
 injury_df = rosters_wk |>
   mutate(team = clean_team_abbrs(team)) |> 
   group_by(full_name, gsis_id, team, season, position) |>
   # Doesn't account for just inactive games
-  summarise(ir_games = sum(status == "RES"),
+  summarise(# Add more & change name
+            ir_games = sum(status == "RES" | status == "INA" | status == "PUP"),
             games = n(),
             ir_rate = ir_games / games,
             .groups = "drop") |> 
@@ -138,7 +143,7 @@ injury_df = rosters_wk |>
 
 
 injury_df_final = contracts_red |> 
-  filter(years < 2024, !is.na(team_abbr)) |> 
+  filter(years <= 2024, !is.na(team_abbr)) |> 
   # filter(player == "Aaron Rodgers") |>
   left_join(injury_df, by = c("player" = "full_name", 
                               "team_abbr" = "team", 
@@ -154,30 +159,30 @@ injury_df_final = contracts_red |>
             .groups = "drop") |>
   arrange(-tot_injured_value_lost)
 
-injury_df_final |> filter(season == 2023) |> arrange(-tot_injured_value_lost)
+injury_df_final |> filter(season == 2024) |> arrange(-tot_injured_value_lost) |> View()
 
 # write.csv(injury_df_final, file = "injury-value-lost.csv")
 
 
-# Quick 2023 Analysis
+# Quick 2024 Analysis
 
 injury_df = read_csv("coding-projects/nfl-fast-r/injury-value-lost.csv")[, -1]
 
 
-injury_df |> filter(season == 2023) |> arrange(-tot_injured_value_lost)
+injury_df |> filter(season == 2024) |> arrange(-tot_injured_value_lost)
 
 
 
-ggplot(injury_df |> filter(season == 2023), 
+ggplot(injury_df |> filter(season == 2024), 
        aes(x = tot_injured_value_lost, 
            y = reorder(team, tot_injured_value_lost))) +
   labs(
-    title = "NFL Injury Luck (2023)",
+    title = "NFL Injury Luck (2024)",
     subtitle = "value lost due to player on IR  |  player value = cap-adjusted apy",
     caption = "By: Sam Burch  |  Data @nflfastR",
     x = "Total Player Value Lost (millions)"
   ) +
-  # scale_x_continuous(breaks = seq(-75, 75, 25)) +
+  scale_x_continuous(breaks = seq(0, 75, 15)) +
   geom_col(aes(color = team, fill = team), alpha = .8, width = 1) +
   nflplotR::scale_fill_nfl(type = "primary") +
   nflplotR::scale_color_nfl(type = "secondary") +
@@ -196,6 +201,6 @@ ggplot(injury_df |> filter(season == 2023),
   nflplotR::geom_nfl_logos(aes(team_abbr = team), width = .03, alpha = .8)
 
 
-# ggsave("nfl-injury-luck-23.png", width = 16, height = 12, units = "cm")
+# ggsave("nfl-injury-luck.png", width = 16, height = 12, units = "cm")
 
 
